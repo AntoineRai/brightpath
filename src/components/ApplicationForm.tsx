@@ -109,7 +109,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
               value={formData.status}
               onChange={handleChange}
               required
-              className="w-full rounded-md bg-gray-700 border-gray-600 text-white focus:ring-cyan-500 focus:border-cyan-500"
+              className="w-full rounded-md bg-gray-700 border-gray-600 text-white focus:ring-cyan-500 focus:border-cyan-500 py-2 h-[44px]"
             >
               <option value="pending">En attente</option>
               <option value="interview">Entretien</option>
