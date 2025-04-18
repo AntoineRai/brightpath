@@ -24,11 +24,11 @@ function Home() {
             </svg>
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-8 tracking-tight">BrightPath</h1>
+          <h1 className="text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 pb-8 tracking-tight">BrightPath</h1>
           <p className="text-2xl md:text-3xl max-w-3xl mb-12 text-gray-100 leading-relaxed">
             Votre chemin vers le succès commence ici.
           </p>
-          <Link to="/contact" className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-10 py-5 rounded-md font-semibold text-xl transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/20">
+          <Link to="/candidatures" className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-10 py-5 rounded-md font-semibold text-xl transition duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/20">
             Commencer maintenant
           </Link>
 
@@ -164,7 +164,7 @@ function Home() {
       {/* CTA Section */}
       <section className="py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-cyan-900 to-blue-900 text-center mt-16">
         <h2 className="text-4xl font-bold text-white mb-8">Prêt à transformer votre recherche d'emploi ?</h2>
-        <Link to="/contact" className="bg-white hover:bg-gray-100 text-cyan-900 px-10 py-5 rounded-md font-semibold text-xl transition duration-300 transform hover:scale-105 inline-block shadow-xl">
+        <Link to="/candidatures" className="bg-white hover:bg-gray-100 text-cyan-900 px-10 py-5 rounded-md font-semibold text-xl transition duration-300 transform hover:scale-105 inline-block shadow-xl">
           Commencer gratuitement
         </Link>
       </section>
