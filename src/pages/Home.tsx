@@ -24,7 +24,7 @@ function Home() {
             </svg>
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 mb-8 tracking-tight">BrightPath</h1>
+          <h1 className="text-6xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400 pb-8 tracking-tight">BrightPath</h1>
           <p className="text-2xl md:text-3xl max-w-3xl mb-12 text-gray-100 leading-relaxed">
             Votre chemin vers le succès commence ici.
           </p>
