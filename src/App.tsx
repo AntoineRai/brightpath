@@ -10,6 +10,8 @@ import CandidaturesSuivi from './pages/CandidaturesSuivi';
 import CVGenerator from './pages/CVGenerator';
 import LettresMotivation from './pages/LettresMotivation';
 import Login from './pages/Login';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 
 // Components
 import Navbar from './components/Navbar';
@@ -28,6 +30,10 @@ function App() {
             <Route path="/cv-generator" element={<CVGenerator />} />
             <Route path="/lettres-motivation" element={<LettresMotivation />} />
             <Route path="/login" element={<Login />} />
+
+            {/* Pages légales */}
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Routes>
         </main>
       </div>
