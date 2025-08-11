@@ -1,7 +1,8 @@
 import { Application, ApplicationStats } from '../types';
+import { getApiUrl, isDevelopment, shouldUseMock } from '../config/environment';
 
 // Configuration de l'API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = getApiUrl();
 
 // Types pour les paramètres de requête
 export interface ApplicationFilters {
@@ -97,7 +98,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la récupération des candidatures:', error);
       
       // Mode développement : fallback avec données mock si l'API n'est pas disponible
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock pour les candidatures');
         return this.mockGetApplications(filters);
       }
@@ -120,7 +121,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la récupération de la candidature:', error);
       
       // Mode développement : fallback avec données mock
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock');
         return this.mockGetApplicationById(id);
       }
@@ -191,7 +192,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la création de la candidature:', error);
       
       // Mode développement : fallback avec données mock
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock');
         return this.mockCreateApplication(applicationData);
       }
@@ -239,7 +240,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la mise à jour de la candidature:', error);
       
       // Mode développement : fallback avec données mock
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock');
         return this.mockUpdateApplication(id, applicationData);
       }
@@ -266,7 +267,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la suppression de la candidature:', error);
       
       // Mode développement : fallback avec données mock
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock');
         return this.mockDeleteApplication(id);
       }
@@ -288,7 +289,7 @@ class ApplicationApiService {
       console.error('Erreur lors de la récupération des statistiques:', error);
       
       // Mode développement : fallback avec données mock
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock');
         return this.mockGetApplicationStats();
       }

@@ -1,3 +1,5 @@
+import { getApiUrl, isDevelopment } from '../config/environment';
+
 // Types pour l'authentification
 export interface LoginCredentials {
   email: string;
@@ -25,7 +27,7 @@ export interface AuthResponse {
 }
 
 // Configuration de l'API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = getApiUrl();
 
 class AuthService {
   // Récupérer le token depuis le localStorage
@@ -82,7 +84,7 @@ class AuthService {
       console.error('Erreur lors de la connexion:', error);
       
       // Mode développement : fallback avec données mock si l'API n'est pas disponible
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock pour le développement');
         return this.mockLogin(credentials);
       }
@@ -136,7 +138,7 @@ class AuthService {
       console.error('Erreur lors de l\'inscription:', error);
       
       // Mode développement : fallback avec données mock si l'API n'est pas disponible
-      if (process.env.NODE_ENV === 'development' && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
         console.warn('API backend non disponible, utilisation du mode mock pour l\'inscription');
         return this.mockRegister(credentials);
       }
