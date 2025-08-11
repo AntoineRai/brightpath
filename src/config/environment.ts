@@ -6,14 +6,14 @@ export const ENV_CONFIG = {
   // URLs de l'API selon l'environnement
   API_URLS: {
     development: process.env.REACT_APP_DEV_API_URL || 'http://localhost:3001/api',
-    production: process.env.REACT_APP_PROD_API_URL || 'https://api.brightpath.com/api',
+    production: process.env.REACT_APP_PROD_API_URL || 'https://brightpath-back.onrender.com/api',
     test: process.env.REACT_APP_TEST_API_URL || 'http://localhost:3001/api'
   },
   
   // URL de base de l'application
   BASE_URLS: {
     development: process.env.REACT_APP_DEV_BASE_URL || 'http://localhost:3000',
-    production: process.env.REACT_APP_PROD_BASE_URL || 'https://brightpath.com',
+    production: process.env.REACT_APP_PROD_BASE_URL || 'https://antoineraimand.fr',
     test: process.env.REACT_APP_TEST_BASE_URL || 'http://localhost:3000'
   },
   
