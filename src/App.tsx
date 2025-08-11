@@ -21,6 +21,7 @@ import NotFound from './pages/NotFound';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import MockIndicator from './components/MockIndicator';
 
 function App() {
   return (
@@ -61,6 +62,7 @@ function App() {
             </main>
           </div>
         </Router>
+        <MockIndicator />
       </AuthProvider>
     </ErrorBoundary>
   );

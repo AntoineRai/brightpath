@@ -13,7 +13,8 @@ export interface Application {
   location?: string;
   salary?: string;
   jobDescription?: string;
-  lastUpdated: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ApplicationStats {

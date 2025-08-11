@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import authService from '../services/authService';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +21,16 @@ function Login() {
     }
   }, [isAuthenticated, navigate]);
 
+  // Réinitialiser les champs quand on change de mode
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setEmail('');
+    setPassword('');
+    setName('');
+    setConfirmPassword('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,24 +38,50 @@ function Login() {
 
     try {
       if (isLogin) {
-        // Simulation d'une connexion réussie (à remplacer par l'appel API)
-        // TODO: Remplacer par l'appel API réel
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        const mockUser = {
-          id: '1',
-          email: email,
-          name: email.split('@')[0] // Utilise la partie avant @ comme nom
-        };
+        // Appel à l'API de connexion
+        const response = await authService.login({ email, password });
         
-        login(mockToken, mockUser);
+        // Connexion réussie
+        login(
+          response.tokens.accessToken,
+          response.tokens.refreshToken,
+          response.user
+        );
         navigate('/');
       } else {
-        // Simulation d'une inscription réussie
-        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-        setIsLogin(true);
+        // Validation des champs pour l'inscription
+        if (!name.trim()) {
+          setError('Le nom est requis');
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          setError('Les mots de passe ne correspondent pas');
+          return;
+        }
+        
+        if (password.length < 6) {
+          setError('Le mot de passe doit contenir au moins 6 caractères');
+          return;
+        }
+
+        // Appel à l'API d'inscription
+        const response = await authService.register({ email, password, name });
+        
+        // Inscription réussie - connexion automatique
+        login(
+          response.tokens.accessToken,
+          response.tokens.refreshToken,
+          response.user
+        );
+        navigate('/');
       }
     } catch (err) {
-      setError('Une erreur est survenue. Veuillez réessayer.');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Une erreur est survenue. Veuillez réessayer.');
+      }
     } finally {
       setLoading(false);
     }
@@ -96,6 +135,24 @@ function Login() {
               />
             </div>
             
+            {!isLogin && (
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+                  Nom complet
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                />
+              </div>
+            )}
+            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
                 Mot de passe
@@ -142,7 +199,10 @@ function Login() {
                   id="confirm-password"
                   name="confirm-password"
                   type="password"
+                  autoComplete="new-password"
                   required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
               </div>
@@ -168,7 +228,8 @@ function Login() {
           
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              type="button"
+              onClick={toggleMode}
               className="text-cyan-400 hover:text-cyan-300 text-sm font-medium"
             >
               {isLogin ? 'Créer un compte' : 'Déjà un compte ? Se connecter'}

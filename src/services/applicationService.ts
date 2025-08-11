@@ -19,13 +19,14 @@ const saveApplications = (applications: Application[]): void => {
 };
 
 // Add a new application
-export const addApplication = (application: Omit<Application, 'id' | 'lastUpdated'>): Application => {
+export const addApplication = (application: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>): Application => {
   const applications = getApplications();
   
   const newApplication: Application = {
     ...application,
     id: generateId(),
-    lastUpdated: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
   
   applications.push(newApplication);
@@ -55,7 +56,7 @@ export const updateApplication = (id: string, updatedData: Partial<Application>)
   applications[index] = {
     ...applications[index],
     ...updatedData,
-    lastUpdated: new Date().toISOString()
+    updatedAt: new Date().toISOString()
   };
   
   saveApplications(applications);

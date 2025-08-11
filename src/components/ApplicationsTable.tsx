@@ -15,7 +15,13 @@ const ApplicationsTable: React.FC<ApplicationsTableProps> = ({
   onDelete,
 }) => {
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Date non spécifiée';
+    
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Date invalide';
+    }
+    
     return date.toLocaleDateString('fr-FR');
   };
 
