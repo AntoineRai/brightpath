@@ -3,7 +3,7 @@ import { Application, ApplicationStatus } from '../types';
 
 interface ApplicationFormProps {
   application?: Application;
-  onSubmit: (applicationData: Omit<Application, 'id' | 'lastUpdated'>) => void;
+  onSubmit: (applicationData: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
 }
 
@@ -12,10 +12,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   onSubmit,
   onCancel
 }) => {
-  const [formData, setFormData] = useState<Omit<Application, 'id' | 'lastUpdated'>>({
+  const [formData, setFormData] = useState<Omit<Application, 'id' | 'createdAt' | 'updatedAt'>>({
     company: '',
     position: '',
-    applicationDate: new Date().toISOString().split('T')[0],
+    applicationDate: new Date().toISOString().split('T')[0], // Format YYYY-MM-DD
     status: 'pending' as ApplicationStatus,
     notes: '',
     contactPerson: '',
@@ -28,7 +28,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
 
   useEffect(() => {
     if (application) {
-      const { id, lastUpdated, ...rest } = application;
+      const { id, createdAt, updatedAt, ...rest } = application;
       setFormData(rest);
     }
   }, [application]);
@@ -43,6 +43,14 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation de la date
+    const date = new Date(formData.applicationDate);
+    if (isNaN(date.getTime())) {
+      alert('Veuillez entrer une date valide');
+      return;
+    }
+    
     onSubmit(formData);
   };
 

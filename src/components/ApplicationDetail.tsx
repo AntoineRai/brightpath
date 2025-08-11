@@ -16,7 +16,13 @@ const ApplicationDetail: React.FC<ApplicationDetailProps> = ({
 }) => {
   // Format date to localized string
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Date non spécifiée';
+    
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Date invalide';
+    }
+    
     return date.toLocaleDateString('fr-FR');
   };
 
@@ -123,7 +129,7 @@ const ApplicationDetail: React.FC<ApplicationDetailProps> = ({
         
         <div>
           <p className="text-sm text-gray-400">Dernière mise à jour</p>
-          <p className="text-white">{formatDate(application.lastUpdated)}</p>
+          <p className="text-white">{formatDate(application.updatedAt)}</p>
         </div>
       </div>
 

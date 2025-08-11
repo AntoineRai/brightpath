@@ -4,13 +4,8 @@ import ApplicationsTable from '../components/ApplicationsTable';
 import ApplicationForm from '../components/ApplicationForm';
 import ApplicationDetail from '../components/ApplicationDetail';
 import ApplicationStats from '../components/ApplicationStats';
-import { 
-  addApplication, 
-  getAllApplications, 
-  updateApplication, 
-  deleteApplication, 
-  getApplicationStats 
-} from '../services/applicationService';
+
+import applicationApiService from '../services/applicationApiService';
 
 function CandidaturesSuivi() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -18,53 +13,111 @@ function CandidaturesSuivi() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [stats, setStats] = useState({
-    total: 0,
-    pending: 0,
-    interview: 0,
-    rejected: 0,
-    accepted: 0
-  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Calculer les statistiques à partir des candidatures
+  const calculateStats = (apps: Application[]) => {
+    return {
+      total: apps.length,
+      pending: apps.filter(app => app.status === 'pending').length,
+      interview: apps.filter(app => app.status === 'interview').length,
+      rejected: apps.filter(app => app.status === 'rejected').length,
+      accepted: apps.filter(app => app.status === 'accepted').length
+    };
+  };
+
 
   // Load applications on component mount
   useEffect(() => {
     loadApplications();
   }, []);
 
-  // Load applications from local storage
-  const loadApplications = () => {
-    const loadedApplications = getAllApplications();
-    setApplications(loadedApplications);
-    setStats(getApplicationStats());
+  // Load applications from API
+  const loadApplications = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const applicationsResponse = await applicationApiService.getApplications();
+      setApplications(applicationsResponse.applications);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erreur lors du chargement des candidatures');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Add a new application
-  const handleAddApplication = (applicationData: Omit<Application, 'id' | 'lastUpdated'>) => {
-    addApplication(applicationData);
-    loadApplications();
-    setIsFormOpen(false);
+  const handleAddApplication = async (applicationData: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      await applicationApiService.createApplication(applicationData);
+      await loadApplications();
+      setIsFormOpen(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erreur lors de la création de la candidature');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Update an existing application
-  const handleUpdateApplication = (applicationData: Omit<Application, 'id' | 'lastUpdated'>) => {
+  const handleUpdateApplication = async (applicationData: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (selectedApplication) {
-      updateApplication(selectedApplication.id, applicationData);
-      loadApplications();
-      setIsFormOpen(false);
-      setIsEditMode(false);
-      setSelectedApplication(null);
+      setLoading(true);
+      setError('');
+      
+      try {
+        await applicationApiService.updateApplication(selectedApplication.id, applicationData);
+        await loadApplications();
+        setIsFormOpen(false);
+        setIsEditMode(false);
+        setSelectedApplication(null);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Erreur lors de la mise à jour de la candidature');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   // Delete an application
-  const handleDeleteApplication = (id: string) => {
+  const handleDeleteApplication = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette candidature ?')) {
-      deleteApplication(id);
-      loadApplications();
+      setLoading(true);
+      setError('');
       
-      if (selectedApplication && selectedApplication.id === id) {
-        setSelectedApplication(null);
-        setIsViewOpen(false);
+      try {
+        await applicationApiService.deleteApplication(id);
+        await loadApplications();
+        
+        if (selectedApplication && selectedApplication.id === id) {
+          setSelectedApplication(null);
+          setIsViewOpen(false);
+        }
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('Erreur lors de la suppression de la candidature');
+        }
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -96,6 +149,13 @@ function CandidaturesSuivi() {
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-center text-cyan-400 mb-8">Suivi des candidatures</h1>
         
+        {/* Error display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
+        
         {/* Main content */}
         <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
           <div className="mb-8">
@@ -111,9 +171,17 @@ function CandidaturesSuivi() {
                   setIsEditMode(false);
                   setSelectedApplication(null);
                 }}
-                className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-md font-medium transition duration-200"
+                disabled={loading}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-md font-medium transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Ajouter une candidature
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Chargement...
+                  </div>
+                ) : (
+                  'Ajouter une candidature'
+                )}
               </button>
             </div>
           </div>
@@ -133,19 +201,23 @@ function CandidaturesSuivi() {
               onClose={handleCloseAll}
             />
           ) : (
-            <ApplicationsTable 
-              applications={applications}
-              onView={handleViewApplication}
-              onEdit={handleEditApplication}
-              onDelete={handleDeleteApplication}
-            />
+            <>
+              <ApplicationsTable 
+                applications={applications}
+                onView={handleViewApplication}
+                onEdit={handleEditApplication}
+                onDelete={handleDeleteApplication}
+              />
+              
+              {/* Statistiques calculées côté frontend */}
+              <div className="mt-8">
+                <ApplicationStats stats={calculateStats(applications)} />
+              </div>
+            </>
           )}
         </div>
         
-        {/* Statistics */}
-        <div className="mt-8">
-          <ApplicationStats stats={stats} />
-        </div>
+
       </div>
     </div>
   );

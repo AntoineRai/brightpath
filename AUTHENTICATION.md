@@ -60,13 +60,16 @@ Les routes suivantes sont protégées :
 - `/cv-generator` - Générateur de CV  
 - `/lettres-motivation` - Lettres de motivation
 
-### ✅ Page de Connexion Améliorée
+### ✅ Page de Connexion/Inscription Améliorée
 
 - **Redirection automatique** si déjà connecté
 - **Gestion des erreurs** avec affichage visuel
 - **État de chargement** avec spinner
 - **Mode connexion/inscription** avec toggle
 - **Validation des formulaires**
+- **Champ nom complet** pour l'inscription
+- **Confirmation de mot de passe** avec validation
+- **Connexion automatique** après inscription réussie
 
 ### ✅ Persistance de Session
 
@@ -92,8 +95,17 @@ interface User {
 }
 
 interface AuthResponse {
-  token: string;
-  user: User;
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+    role: string;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
 }
 ```
 

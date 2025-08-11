@@ -1,3 +1,5 @@
+import { getApiUrl, isDevelopment } from '../config/environment';
+
 // Types pour l'authentification
 export interface LoginCredentials {
   email: string;
@@ -11,16 +13,21 @@ export interface RegisterCredentials {
 }
 
 export interface AuthResponse {
-  token: string;
+  message: string;
   user: {
-    id: string;
+    id: number;
     email: string;
     name: string;
+    role: string;
+  };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
   };
 }
 
 // Configuration de l'API
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = getApiUrl();
 
 class AuthService {
   // Récupérer le token depuis le localStorage
@@ -28,14 +35,21 @@ class AuthService {
     return localStorage.getItem('authToken');
   }
 
-  // Définir le token dans le localStorage
-  setToken(token: string): void {
-    localStorage.setItem('authToken', token);
+  // Récupérer le refresh token depuis le localStorage
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken');
   }
 
-  // Supprimer le token
-  removeToken(): void {
+  // Définir les tokens dans le localStorage
+  setTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem('authToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  }
+
+  // Supprimer les tokens
+  removeTokens(): void {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
   }
 
   // Créer les headers avec le token d'authentification
@@ -64,12 +78,41 @@ class AuthService {
       }
 
       const data: AuthResponse = await response.json();
-      this.setToken(data.token);
+      this.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       return data;
     } catch (error) {
       console.error('Erreur lors de la connexion:', error);
+      
+      // Mode développement : fallback avec données mock si l'API n'est pas disponible
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('API backend non disponible, utilisation du mode mock pour le développement');
+        return this.mockLogin(credentials);
+      }
+      
       throw error;
     }
+  }
+
+  // Mode mock pour le développement
+  private async mockLogin(credentials: LoginCredentials): Promise<AuthResponse> {
+    // Simuler un délai réseau
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const mockResponse: AuthResponse = {
+      message: 'Connexion réussie (mode mock)',
+      user: {
+        id: 1,
+        email: credentials.email,
+        name: credentials.email.split('@')[0],
+        role: 'user'
+      },
+      tokens: {
+        accessToken: `mock-access-token-${Date.now()}`,
+        refreshToken: `mock-refresh-token-${Date.now()}`
+      }
+    };
+    
+    return mockResponse;
   }
 
   // Inscription
@@ -89,12 +132,41 @@ class AuthService {
       }
 
       const data: AuthResponse = await response.json();
-      this.setToken(data.token);
+      this.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
       return data;
     } catch (error) {
       console.error('Erreur lors de l\'inscription:', error);
+      
+      // Mode développement : fallback avec données mock si l'API n'est pas disponible
+      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('API backend non disponible, utilisation du mode mock pour l\'inscription');
+        return this.mockRegister(credentials);
+      }
+      
       throw error;
     }
+  }
+
+  // Mode mock pour l'inscription
+  private async mockRegister(credentials: RegisterCredentials): Promise<AuthResponse> {
+    // Simuler un délai réseau
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    const mockResponse: AuthResponse = {
+      message: 'Inscription réussie (mode mock)',
+      user: {
+        id: Math.floor(Math.random() * 1000) + 1,
+        email: credentials.email,
+        name: credentials.name,
+        role: 'user'
+      },
+      tokens: {
+        accessToken: `mock-access-token-${Date.now()}`,
+        refreshToken: `mock-refresh-token-${Date.now()}`
+      }
+    };
+    
+    return mockResponse;
   }
 
   // Déconnexion
@@ -105,16 +177,16 @@ class AuthService {
         headers: this.getAuthHeaders(),
       });
 
-      // Même si l'appel API échoue, on supprime le token localement
-      this.removeToken();
+      // Même si l'appel API échoue, on supprime les tokens localement
+      this.removeTokens();
       
       if (!response.ok) {
         console.warn('Erreur lors de la déconnexion côté serveur');
       }
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
-      // On supprime quand même le token localement
-      this.removeToken();
+      // On supprime quand même les tokens localement
+      this.removeTokens();
     }
   }
 
@@ -134,6 +206,37 @@ class AuthService {
       return response.ok;
     } catch (error) {
       console.error('Erreur lors de la vérification du token:', error);
+      return false;
+    }
+  }
+
+  // Rafraîchir le token
+  async refreshToken(): Promise<boolean> {
+    try {
+      const refreshToken = this.getRefreshToken();
+      if (!refreshToken) {
+        return false;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        this.removeTokens();
+        return false;
+      }
+
+      const data = await response.json();
+      this.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement du token:', error);
+      this.removeTokens();
       return false;
     }
   }
