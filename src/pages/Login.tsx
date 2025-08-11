@@ -1,15 +1,51 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Rediriger si déjà connecté
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Traitement du formulaire (appel API, etc.)
-    alert(isLogin ? 'Connexion réussie !' : 'Inscription réussie !');
+    setLoading(true);
+    setError('');
+
+    try {
+      if (isLogin) {
+        // Simulation d'une connexion réussie (à remplacer par l'appel API)
+        // TODO: Remplacer par l'appel API réel
+        const mockToken = 'mock-jwt-token-' + Date.now();
+        const mockUser = {
+          id: '1',
+          email: email,
+          name: email.split('@')[0] // Utilise la partie avant @ comme nom
+        };
+        
+        login(mockToken, mockUser);
+        navigate('/');
+      } else {
+        // Simulation d'une inscription réussie
+        alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+        setIsLogin(true);
+      }
+    } catch (err) {
+      setError('Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,6 +74,11 @@ function Login() {
         </div>
         
         <div className="bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-700">
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
@@ -110,9 +151,17 @@ function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
+                disabled={loading}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-cyan-500 hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLogin ? 'Se connecter' : 'S\'inscrire'}
+                {loading ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {isLogin ? 'Connexion...' : 'Inscription...'}
+                  </div>
+                ) : (
+                  isLogin ? 'Se connecter' : 'S\'inscrire'
+                )}
               </button>
             </div>
           </form>
