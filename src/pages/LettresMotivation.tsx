@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import aiApiService from '../services/aiApiService';
 
 function LettresMotivation() {
   const [formData, setFormData] = useState({
@@ -12,6 +13,12 @@ function LettresMotivation() {
     destinataire: '',
     contenu: ''
   });
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState('');
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
+  const [isCopying, setIsCopying] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -27,14 +34,108 @@ function LettresMotivation() {
     alert('Lettre de motivation générée avec succès !');
   };
 
-  const handleGenererContenuAI = () => {
-    // Simuler une génération IA
-    setTimeout(() => {
+  const handleGenererContenuAI = async () => {
+    // Validation des champs requis
+    const requiredFields = ['nom', 'prenom', 'email', 'telephone', 'adresse', 'entreprise', 'poste'];
+    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
+    
+    if (missingFields.length > 0) {
+      setGenerationError(`Veuillez remplir tous les champs obligatoires : ${missingFields.join(', ')}`);
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerationError('');
+
+    try {
+      const response = await aiApiService.generateCoverLetter({
+        position: formData.poste,
+        company: formData.entreprise,
+        nom: formData.nom,
+        prenom: formData.prenom,
+        email: formData.email,
+        telephone: formData.telephone,
+        adresse: formData.adresse,
+        destinataire: formData.destinataire || undefined
+      });
+
       setFormData(prevData => ({
         ...prevData,
-        contenu: `Objet : Candidature au poste de ${formData.poste}\n\nMadame, Monsieur,\n\nC'est avec un vif intérêt que je vous soumets ma candidature au poste de ${formData.poste} au sein de ${formData.entreprise}, entreprise dont la réputation d'excellence et d'innovation n'est plus à faire.\n\nActuellement [votre situation professionnelle actuelle], je possède une solide expérience dans [domaine d'expertise] qui me permettrait d'apporter une réelle valeur ajoutée à votre équipe.\n\nParticulièrement attiré(e) par [un aspect spécifique de l'entreprise ou du poste], je suis convaincu(e) que mes compétences en [compétence clé] seraient un atout pour répondre aux défis que vous rencontrez.\n\nJe reste à votre disposition pour un entretien au cours duquel je pourrai vous démontrer ma motivation et vous apporter plus de détails sur mon parcours.\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.\n\n[Votre prénom et nom]`
+        contenu: response.content
       }));
-    }, 1500);
+      
+      setLastGeneratedAt(response.generatedAt);
+      
+      // Afficher un message de succès
+      const successMessage = `Lettre générée avec succès ! (${response.model})`;
+      console.log(successMessage);
+      
+    } catch (error) {
+      console.error('Erreur lors de la génération:', error);
+      setGenerationError(error instanceof Error ? error.message : 'Erreur lors de la génération de la lettre');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!formData.contenu.trim()) {
+      alert('Aucun contenu à copier. Veuillez d\'abord générer ou saisir une lettre de motivation.');
+      return;
+    }
+
+    setIsCopying(true);
+    setCopySuccess(false);
+
+    try {
+      // Préparer le contenu complet de la lettre
+      const fullLetter = `${formData.prenom} ${formData.nom}
+${formData.adresse}
+${formData.email}
+${formData.telephone}
+
+[Date]
+
+${formData.destinataire ? `À l'attention de ${formData.destinataire}\n` : ''}${formData.entreprise}
+
+${formData.contenu}`;
+
+      // Utiliser l'API Clipboard moderne si disponible
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(fullLetter);
+        setCopySuccess(true);
+      } else {
+        // Fallback pour les navigateurs plus anciens ou contextes non sécurisés
+        const textArea = document.createElement('textarea');
+        textArea.value = fullLetter;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          setCopySuccess(true);
+        } else {
+          throw new Error('Impossible de copier dans le presse-papiers');
+        }
+      }
+
+      // Réinitialiser le message de succès après 3 secondes
+      setTimeout(() => {
+        setCopySuccess(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Erreur lors de la copie:', error);
+      alert('Erreur lors de la copie dans le presse-papiers. Veuillez réessayer.');
+    } finally {
+      setIsCopying(false);
+    }
   };
 
   return (
@@ -50,52 +151,57 @@ function LettresMotivation() {
                 <h2 className="text-xl font-semibold text-cyan-300 mb-4">Vos informations</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
                     <input 
                       type="text" 
                       name="nom"
                       value={formData.nom}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Prénom</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Prénom *</label>
                     <input 
                       type="text" 
                       name="prenom"
                       value={formData.prenom}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
                     <input 
                       type="email" 
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone *</label>
                     <input 
                       type="tel" 
                       name="telephone"
                       value={formData.telephone}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Adresse</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Adresse *</label>
                     <input 
                       type="text" 
                       name="adresse"
                       value={formData.adresse}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
@@ -106,27 +212,29 @@ function LettresMotivation() {
                 <h2 className="text-xl font-semibold text-cyan-300 mb-4">Informations sur l'entreprise</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Nom de l'entreprise</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Nom de l'entreprise *</label>
                     <input 
                       type="text" 
                       name="entreprise"
                       value={formData.entreprise}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Poste convoité</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Poste convoité *</label>
                     <input 
                       type="text" 
                       name="poste"
                       value={formData.poste}
                       onChange={handleChange}
+                      required
                       className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Destinataire (si connu)</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Destinataire (optionnel)</label>
                     <input 
                       type="text" 
                       name="destinataire"
@@ -145,14 +253,41 @@ function LettresMotivation() {
                   <button 
                     type="button"
                     onClick={handleGenererContenuAI}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md text-sm font-medium transition duration-200 flex items-center"
+                    disabled={isGenerating}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition duration-200 flex items-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Générer avec IA
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Génération...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Générer avec IA
+                      </>
+                    )}
                   </button>
                 </div>
+                
+                {/* Message d'erreur */}
+                {generationError && (
+                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md">
+                    <p className="text-red-400 text-sm">{generationError}</p>
+                  </div>
+                )}
+                
+                {/* Message de succès */}
+                {lastGeneratedAt && !generationError && (
+                  <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-md">
+                    <p className="text-green-400 text-sm">
+                      Lettre générée avec succès le {new Date(lastGeneratedAt).toLocaleString('fr-FR')}
+                    </p>
+                  </div>
+                )}
+                
                 <textarea 
                   name="contenu"
                   value={formData.contenu}
@@ -163,14 +298,7 @@ function LettresMotivation() {
                 ></textarea>
               </div>
               
-              <div className="flex justify-center pt-4">
-                <button
-                  type="submit"
-                  className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-md font-semibold text-lg transition duration-200"
-                >
-                  Générer la lettre de motivation
-                </button>
-              </div>
+
             </form>
           </div>
           
@@ -206,11 +334,35 @@ function LettresMotivation() {
                   </svg>
                   Télécharger en PDF
                 </button>
-                <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition duration-200 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Copier dans le presse-papiers
+                <button 
+                  onClick={handleCopyToClipboard}
+                  disabled={isCopying || !formData.contenu.trim()}
+                  className={`${
+                    copySuccess 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : 'bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed'
+                  } text-white px-4 py-2 rounded-md font-medium transition duration-200 flex items-center justify-center`}
+                >
+                  {isCopying ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Copie...
+                    </>
+                  ) : copySuccess ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Copié !
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copier dans le presse-papiers
+                    </>
+                  )}
                 </button>
               </div>
             </div>
