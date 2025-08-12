@@ -77,7 +77,19 @@ function LettresMotivation() {
       
     } catch (error) {
       console.error('Erreur lors de la génération:', error);
-      setGenerationError(error instanceof Error ? error.message : 'Erreur lors de la génération de la lettre');
+      
+      // Messages d'erreur plus spécifiques pour mobile
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('Impossible de se connecter')) {
+          setGenerationError('Erreur de connexion. Vérifiez votre connexion internet et réessayez.');
+        } else if (error.message.includes('timeout') || error.message.includes('trop de temps')) {
+          setGenerationError('La requête a pris trop de temps. Veuillez réessayer.');
+        } else {
+          setGenerationError(error.message);
+        }
+      } else {
+        setGenerationError('Erreur lors de la génération de la lettre. Veuillez réessayer.');
+      }
     } finally {
       setIsGenerating(false);
     }
