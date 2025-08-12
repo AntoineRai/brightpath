@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import aiApiService from '../services/aiApiService';
 
 function LettresMotivation() {
@@ -19,6 +21,9 @@ function LettresMotivation() {
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -135,6 +140,100 @@ ${formData.contenu}`;
       alert('Erreur lors de la copie dans le presse-papiers. Veuillez réessayer.');
     } finally {
       setIsCopying(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!formData.contenu.trim()) {
+      alert('Aucun contenu à télécharger. Veuillez d\'abord générer ou saisir une lettre de motivation.');
+      return;
+    }
+
+    setIsGeneratingPDF(true);
+
+    try {
+      if (!previewRef.current) {
+        throw new Error('Élément d\'aperçu non trouvé');
+      }
+
+      // Créer un élément temporaire pour le PDF
+      const pdfElement = document.createElement('div');
+      pdfElement.style.position = 'absolute';
+      pdfElement.style.left = '-9999px';
+      pdfElement.style.top = '0';
+      pdfElement.style.width = '210mm'; // Format A4
+      pdfElement.style.padding = '20mm';
+      pdfElement.style.backgroundColor = 'white';
+      pdfElement.style.color = 'black';
+      pdfElement.style.fontFamily = 'Arial, sans-serif';
+      pdfElement.style.fontSize = '12px';
+      pdfElement.style.lineHeight = '1.5';
+      
+      // Contenu de la lettre
+      const currentDate = new Date().toLocaleDateString('fr-FR');
+      pdfElement.innerHTML = `
+        <div style="text-align: right; margin-bottom: 30px;">
+          <p style="margin: 0; font-weight: bold;">${formData.prenom} ${formData.nom}</p>
+          <p style="margin: 0;">${formData.adresse}</p>
+          <p style="margin: 0;">${formData.telephone}</p>
+          <p style="margin: 0;">${formData.email}</p>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <p style="margin: 0;">${currentDate}</p>
+          <br>
+          <p style="margin: 0;">${formData.destinataire ? `À l'attention de ${formData.destinataire}` : ''}</p>
+          <p style="margin: 0; font-weight: bold;">${formData.entreprise}</p>
+        </div>
+        
+        <div style="white-space: pre-line; margin-top: 30px; text-align: justify;">
+          ${formData.contenu}
+        </div>
+      `;
+
+      document.body.appendChild(pdfElement);
+
+      // Convertir en canvas puis en PDF
+      const canvas = await html2canvas(pdfElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
+      document.body.removeChild(pdfElement);
+
+      // Créer le PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // Largeur A4
+      const pageHeight = 295; // Hauteur A4
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      // Première page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Pages supplémentaires si nécessaire
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Télécharger le PDF
+      const fileName = `lettre_motivation_${formData.prenom}_${formData.nom}_${formData.entreprise}.pdf`;
+      pdf.save(fileName);
+
+    } catch (error) {
+      console.error('Erreur lors de la génération du PDF:', error);
+      alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -298,7 +397,6 @@ ${formData.contenu}`;
                 ></textarea>
               </div>
               
-
             </form>
           </div>
           
@@ -306,7 +404,7 @@ ${formData.contenu}`;
           <div>
             <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700 mb-6">
               <h2 className="text-xl font-semibold text-cyan-300 mb-4">Aperçu</h2>
-              <div className="bg-white p-6 rounded-md text-black">
+              <div ref={previewRef} className="bg-white p-6 rounded-md text-black">
                 <div className="text-right mb-4">
                   <p>{formData.prenom} {formData.nom}</p>
                   <p>{formData.adresse}</p>
@@ -328,11 +426,28 @@ ${formData.contenu}`;
             <div className="bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
               <h2 className="text-xl font-semibold text-cyan-300 mb-4">Options d'exportation</h2>
               <div className="grid grid-cols-2 gap-4">
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition duration-200 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Télécharger en PDF
+                <button 
+                  onClick={handleDownloadPDF}
+                  disabled={isGeneratingPDF || !formData.contenu.trim()}
+                  className={`${
+                    isGeneratingPDF 
+                      ? 'bg-blue-800 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed'
+                  } text-white px-4 py-2 rounded-md font-medium transition duration-200 flex items-center justify-center`}
+                >
+                  {isGeneratingPDF ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Génération PDF...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Télécharger en PDF
+                    </>
+                  )}
                 </button>
                 <button 
                   onClick={handleCopyToClipboard}
