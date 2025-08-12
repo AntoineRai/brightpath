@@ -49,7 +49,6 @@ function CVGenerator() {
   
   // États pour l'optimisation des textes
   const [optimizingTexts, setOptimizingTexts] = useState<{ [key: string]: boolean }>({});
-  const [optimizationErrors, setOptimizationErrors] = useState<{ [key: string]: string }>({});
   
   const cvPreviewRef = useRef<HTMLDivElement>(null);
   
@@ -181,7 +180,6 @@ function CVGenerator() {
 
     const textKey = `${textType}_${Date.now()}`;
     setOptimizingTexts(prev => ({ ...prev, [textKey]: true }));
-    setOptimizationErrors(prev => ({ ...prev, [textKey]: '' }));
 
     try {
       const response = await aiApiService.professionalizeText({
@@ -204,7 +202,6 @@ function CVGenerator() {
     } catch (error) {
       console.error('Erreur lors de l\'optimisation:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'optimisation';
-      setOptimizationErrors(prev => ({ ...prev, [textKey]: errorMessage }));
       
       // Afficher l'erreur à l'utilisateur
       alert(`Erreur lors de l'optimisation: ${errorMessage}`);
@@ -252,7 +249,6 @@ function CVGenerator() {
       pdfElement.style.lineHeight = '1.5';
       
       // Contenu du CV selon le modèle
-      const currentDate = new Date().toLocaleDateString('fr-FR');
       let cvContent = '';
       
       switch (selectedModel) {
