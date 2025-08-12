@@ -1,6 +1,6 @@
-import { isDevelopment } from '../config/environment';
+import { isDevelopment, getApiUrl } from '../config/environment';
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL = getApiUrl();
 
 interface CoverLetterRequest {
   position: string;
@@ -45,23 +45,44 @@ class AiApiService {
   // Générer une lettre de motivation avec l'IA
   async generateCoverLetter(data: CoverLetterRequest): Promise<CoverLetterResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/ai/cover-letter`, {
+      console.log('🌐 Tentative de connexion à l\'API:', `${API_BASE_URL}/ai/cover-letter`);
+      
+      const response = await fetch(`${API_BASE_URL}/ai/cover-letter`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
+        // Ajouter un timeout pour éviter les blocages
+        signal: AbortSignal.timeout(30000) // 30 secondes
       });
 
       return await this.handleResponse<CoverLetterResponse>(response);
     } catch (error) {
-      console.error('Erreur lors de la génération de la lettre de motivation:', error);
+      console.error('❌ Erreur lors de la génération de la lettre de motivation:', error);
       
-      // Mode développement : fallback avec données mock si l'API n'est pas disponible
-      if (isDevelopment() && error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        console.warn('API backend non disponible, utilisation du mode mock pour la génération IA');
-        return this.mockGenerateCoverLetter(data);
+      // Gestion spécifique des erreurs de réseau
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('🌐 Erreur de connexion réseau détectée');
+        
+        // En mode développement ou si l'API n'est pas disponible, utiliser le mock
+        if (isDevelopment()) {
+          console.warn('🔄 Utilisation du mode mock pour la génération IA');
+          return this.mockGenerateCoverLetter(data);
+        } else {
+          throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et réessayez.');
+        }
       }
       
-      throw error;
+      // Gestion des erreurs de timeout
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('La requête a pris trop de temps. Veuillez réessayer.');
+      }
+      
+      // Autres erreurs
+      if (error instanceof Error) {
+        throw new Error(`Erreur lors de la génération: ${error.message}`);
+      }
+      
+      throw new Error('Une erreur inattendue s\'est produite. Veuillez réessayer.');
     }
   }
 
