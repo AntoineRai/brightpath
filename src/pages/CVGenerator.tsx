@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import aiApiService from '../services/aiApiService';
 
 interface Experience {
   id: string;
@@ -45,6 +46,10 @@ function CVGenerator() {
     secondary: '#64748b', // gray-500
     accent: '#0891b2' // cyan-600
   });
+  
+  // États pour l'optimisation des textes
+  const [optimizingTexts, setOptimizingTexts] = useState<{ [key: string]: boolean }>({});
+  const [optimizationErrors, setOptimizationErrors] = useState<{ [key: string]: string }>({});
   
   const cvPreviewRef = useRef<HTMLDivElement>(null);
   
@@ -165,6 +170,57 @@ function CVGenerator() {
     setFormations(prev => prev.map(formation => 
       formation.id === id ? { ...formation, [field]: value } : formation
     ));
+  };
+
+  // Optimisation des textes avec l'IA
+  const optimizeText = async (textType: string, originalText: string, context: string, updateFunction: (value: string) => void) => {
+    if (!originalText.trim()) {
+      alert('Veuillez d\'abord saisir du texte à optimiser.');
+      return;
+    }
+
+    const textKey = `${textType}_${Date.now()}`;
+    setOptimizingTexts(prev => ({ ...prev, [textKey]: true }));
+    setOptimizationErrors(prev => ({ ...prev, [textKey]: '' }));
+
+    try {
+      const response = await aiApiService.professionalizeText({
+        originalText: originalText.trim(),
+        context: context
+      });
+
+      updateFunction(response.content);
+      
+      // Afficher un message de succès temporaire
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg z-50';
+      successMessage.textContent = 'Texte optimisé avec succès !';
+      document.body.appendChild(successMessage);
+      
+      setTimeout(() => {
+        document.body.removeChild(successMessage);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Erreur lors de l\'optimisation:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'optimisation';
+      setOptimizationErrors(prev => ({ ...prev, [textKey]: errorMessage }));
+      
+      // Afficher l'erreur à l'utilisateur
+      alert(`Erreur lors de l'optimisation: ${errorMessage}`);
+    } finally {
+      setOptimizingTexts(prev => ({ ...prev, [textKey]: false }));
+    }
+  };
+
+  // Optimiser une description d'expérience
+  const optimizeExperienceDescription = (experienceId: string, currentDescription: string, poste: string, entreprise: string) => {
+    optimizeText(
+      `experience_${experienceId}`,
+      currentDescription,
+      `${poste || 'Développeur'} chez ${entreprise || 'Entreprise'}`,
+      (value) => updateExperience(experienceId, 'description', value)
+    );
   };
 
   // Gestion des couleurs personnalisées
@@ -877,7 +933,35 @@ function CVGenerator() {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-sm font-medium text-gray-300">Description</label>
+                        <button
+                          onClick={() => optimizeExperienceDescription(experience.id, experience.description, experience.poste, experience.entreprise)}
+                          disabled={Object.values(optimizingTexts).some(Boolean) || !experience.description.trim()}
+                          className={`text-xs px-2 py-1 rounded transition duration-200 flex items-center ${
+                            Object.values(optimizingTexts).some(Boolean) || !experience.description.trim()
+                              ? 'bg-blue-800 text-gray-400 cursor-not-allowed'
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          {Object.values(optimizingTexts).some(Boolean) ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Optimisation...
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Optimiser le texte
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <textarea 
                         rows={3} 
                         value={experience.description}

@@ -25,6 +25,23 @@ interface CoverLetterResponse {
   generatedAt: string;
 }
 
+interface ProfessionalizeTextRequest {
+  originalText: string;
+  context: string;
+}
+
+interface ProfessionalizeTextResponse {
+  message: string;
+  content: string;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  model: string;
+  generatedAt: string;
+}
+
 class AiApiService {
   private getAuthHeaders(): HeadersInit {
     const token = localStorage.getItem('authToken');
@@ -129,6 +146,72 @@ ${data.prenom} ${data.nom}`;
           generatedAt: new Date().toISOString()
         });
       }, 2000); // Simulation d'un délai de génération
+    });
+  }
+
+  // Professionnaliser un texte avec l'IA
+  async professionalizeText(data: ProfessionalizeTextRequest): Promise<ProfessionalizeTextResponse> {
+    try {
+      console.log('🌐 Tentative de professionnalisation du texte:', `${API_BASE_URL}/ai/professionalize-text`);
+      
+      const response = await fetch(`${API_BASE_URL}/ai/professionalize-text`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(data),
+        signal: AbortSignal.timeout(30000) // 30 secondes
+      });
+
+      return await this.handleResponse<ProfessionalizeTextResponse>(response);
+    } catch (error) {
+      console.error('❌ Erreur lors de la professionnalisation du texte:', error);
+      
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.warn('🌐 Erreur de connexion réseau détectée');
+        
+        if (isDevelopment()) {
+          console.warn('🔄 Utilisation du mode mock pour la professionnalisation');
+          return this.mockProfessionalizeText(data);
+        } else {
+          throw new Error('Impossible de se connecter au serveur. Vérifiez votre connexion internet et réessayez.');
+        }
+      }
+      
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('La requête a pris trop de temps. Veuillez réessayer.');
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`Erreur lors de la professionnalisation: ${error.message}`);
+      }
+      
+      throw new Error('Une erreur inattendue s\'est produite. Veuillez réessayer.');
+    }
+  }
+
+  // Mock pour la professionnalisation de texte
+  private mockProfessionalizeText(data: ProfessionalizeTextRequest): Promise<ProfessionalizeTextResponse> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Simulation d'une professionnalisation basique
+        const professionalizedText = data.originalText
+          .replace(/bosser/g, 'travailler')
+          .replace(/avoir l'occasion de/g, 'avoir l\'opportunité de')
+          .replace(/plusieurs domaines/g, 'divers domaines')
+          .replace(/j'ai eu/g, 'j\'ai pu')
+          .replace(/dans/g, 'au sein de');
+
+        resolve({
+          message: "Texte professionnalisé avec succès (mode mock)",
+          content: professionalizedText,
+          usage: {
+            prompt_tokens: 45,
+            completion_tokens: 28,
+            total_tokens: 73
+          },
+          model: "gpt-3.5-turbo (mock)",
+          generatedAt: new Date().toISOString()
+        });
+      }, 1500); // Simulation d'un délai de génération
     });
   }
 }
