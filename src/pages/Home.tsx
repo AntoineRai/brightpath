@@ -168,6 +168,25 @@ function Home() {
           Commencer gratuitement
         </Link>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
+            <div className="flex items-center gap-6">
+              <Link to="/privacy" className="hover:text-cyan-400 transition-colors">
+                Politique de confidentialité
+              </Link>
+              <Link to="/terms" className="hover:text-cyan-400 transition-colors">
+                Conditions d'utilisation
+              </Link>
+            </div>
+            <div>
+              © {new Date().getFullYear()} BrightPath
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
