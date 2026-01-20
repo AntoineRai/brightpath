@@ -64,15 +64,24 @@ class AiApiService {
     try {
       console.log('🌐 Tentative de connexion à l\'API:', `${API_BASE_URL}/ai/cover-letter`);
       
-      const response = await fetch(`${API_BASE_URL}/ai/cover-letter`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data),
-        // Ajouter un timeout pour éviter les blocages
-        signal: AbortSignal.timeout(30000) // 30 secondes
-      });
+      // Créer un AbortController pour gérer le timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes
 
-      return await this.handleResponse<CoverLetterResponse>(response);
+      try {
+        const response = await fetch(`${API_BASE_URL}/ai/cover-letter`, {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(data),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        return await this.handleResponse<CoverLetterResponse>(response);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la génération de la lettre de motivation:', error);
       
@@ -154,14 +163,24 @@ ${data.prenom} ${data.nom}`;
     try {
       console.log('🌐 Tentative de professionnalisation du texte:', `${API_BASE_URL}/ai/professionalize-text`);
       
-      const response = await fetch(`${API_BASE_URL}/ai/professionalize-text`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(data),
-        signal: AbortSignal.timeout(30000) // 30 secondes
-      });
+      // Créer un AbortController pour gérer le timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 secondes
 
-      return await this.handleResponse<ProfessionalizeTextResponse>(response);
+      try {
+        const response = await fetch(`${API_BASE_URL}/ai/professionalize-text`, {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(data),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        return await this.handleResponse<ProfessionalizeTextResponse>(response);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la professionnalisation du texte:', error);
       
