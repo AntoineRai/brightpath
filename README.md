@@ -118,6 +118,7 @@ REACT_APP_ENVIRONMENT=development
 - [API Documentation](./docs/API.md) - Documentation des endpoints API
 - [Guide de Développement](./docs/DEVELOPMENT.md) - Guide pour les développeurs
 - [Accessibilité (a11y)](./docs/ACCESSIBILITE.md) - Principes, bonnes pratiques et checklist
+- [Données personnelles & RGPD](./docs/RGPD_DONNEES_PERSONNELLES.md) - Usage de l'IA, droit à l'oubli et bonnes pratiques
 
 ## 🎯 Fonctionnalités Avancées
 
