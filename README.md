@@ -117,6 +117,7 @@ REACT_APP_ENVIRONMENT=development
 - [Architecture Technique](./docs/ARCHITECTURE.md) - Structure technique détaillée
 - [API Documentation](./docs/API.md) - Documentation des endpoints API
 - [Guide de Développement](./docs/DEVELOPMENT.md) - Guide pour les développeurs
+- [Accessibilité (a11y)](./docs/ACCESSIBILITE.md) - Principes, bonnes pratiques et checklist
 
 ## 🎯 Fonctionnalités Avancées
 
