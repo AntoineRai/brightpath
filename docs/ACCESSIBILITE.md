@@ -20,6 +20,53 @@ Référence cible : **WCAG 2.2 niveau AA** (bonnes pratiques web largement recon
 
 ---
 
+## 📚 Référentiels / normes visés
+
+- **WCAG 2.2 (niveau AA)** : référence principale pour les exigences d’accessibilité web.
+- **RGAA (France)** : référentiel français d’accessibilité, basé sur les WCAG (utile si le projet vise une conformité “administration/secteur public”).
+- **WAI-ARIA** (en complément) : uniquement lorsque le HTML sémantique ne suffit pas (menus, composants dynamiques, etc.).
+
+---
+
+## ✅ Ce qui est déjà mis en place dans BrightPath
+
+Les éléments ci-dessous sont **déjà présents dans le code** et contribuent à respecter les bonnes pratiques d’accessibilité (WCAG/RGAA).
+
+### Formulaires : libellés et champs correctement typés
+
+- **Labels associés aux champs** via `label` + `htmlFor` / `id` (ex. page `Login`, formulaire `ApplicationForm`).
+- **Champs typés** (`type="email"`, `type="date"`, etc.) et attributs `required` pour bénéficier des aides natives navigateur.
+
+### Focus visible et utilisabilité clavier
+
+- Les champs et boutons utilisent des styles de focus visibles (ex. classes Tailwind `focus:ring-*`, `focus:outline-none` avec ring).
+- Les actions sont portées par des éléments natifs (`button`, `a`/`Link`) : meilleur support clavier/assistive tech qu’un `div` cliquable.
+
+### Navigation et intitulés compréhensibles
+
+- La navigation principale est portée par un élément sémantique **`nav`** (composant `Navbar`).
+- La majorité des liens de navigation ont un **texte explicite** (“Suivi des candidatures”, “Générateur de CV”, etc.) ; les icônes viennent en renfort.
+
+### Messages et retours utilisateur
+
+- Les erreurs de formulaire sont affichées avec un **texte clair** (ex. message d’erreur sur `Login`) plutôt qu’une information uniquement par la couleur.
+- Les boutons ont des états visibles (ex. `disabled:opacity-50` sur `Login`) pour signaler un état non-interactif.
+
+### Responsive / reflow
+
+- Mise en page **responsive** via Tailwind (breakpoints `sm`/`md`/`lg`) : contribue au “reflow” et à l’usage à fort zoom.
+
+---
+
+## 🔧 Améliorations a11y identifiées (à compléter)
+
+Ces points ne remettent pas en cause l’existant, mais amélioreraient la conformité (notamment WCAG 2.2 AA / RGAA) :
+
+- **Menu mobile** : ajouter un nom accessible au bouton (ex. `aria-label="Ouvrir le menu"`) + `aria-expanded` / `aria-controls`.
+- **Boutons icône-only (desktop)** : ajouter un `aria-label` (ex. déconnexion) en plus du `title`.
+- **Erreurs de formulaire** : utiliser une zone annoncée (`role="alert"` / `aria-live`) et/ou associer l’erreur au champ (`aria-describedby`).
+- **Skip link** : ajouter “Aller au contenu principal” pour accélérer la navigation clavier/lecteur d’écran.
+
 ## ⌨️ Navigation clavier
 
 ### Exigences
